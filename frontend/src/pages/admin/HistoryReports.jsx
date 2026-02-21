@@ -20,7 +20,7 @@ const HistoryReports = () => {
     const getReports = async () => {
         setLoading(true);
         try {
-            const res = await axiosJWT.get(`${import.meta.env.VITE_API_URL}/api/reports`);
+            const res = await axiosJWT.get(`/api/reports`);
             
             // Filter: Hanya tampilkan laporan yang sudah SELESAI (accepted / rejected)
             const finishedReports = res.data.filter(r => r.status === 'accepted' || r.status === 'rejected');
