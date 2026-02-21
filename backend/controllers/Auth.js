@@ -98,7 +98,8 @@ export const Register = async(req, res) => {
         const verificationToken = jwt.sign({email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1d'});
 
         // 4. Kirim Email Verifikasi
-        const url = `http://localhost:5000/verify-email?token=${verificationToken}`;
+        const apiUrl = process.env.API_URL || 'http://localhost:5000';
+        const url = `${apiUrl}/verify-email?token=${verificationToken}`;
         
         await transporter.sendMail({
             from: `"Lapor Fasilitas UHAMKA" <${process.env.EMAIL_USER}>`,
@@ -122,24 +123,25 @@ export const Register = async(req, res) => {
 
 // --- VERIFY LINK ---
 export const VerifyEmailLink = async(req, res) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     try {
         const { token } = req.query;
-        if(!token) return res.redirect('http://localhost:5173/?error=invalid_token');
+        if(!token) return res.redirect(`${frontendUrl}/?error=invalid_token`);
 
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const user = await Users.findOne({ where: { email: decoded.email } });
         
-        if(!user) return res.redirect('http://localhost:5173/?error=user_not_found');
+        if(!user) return res.redirect(`${frontendUrl}/?error=user_not_found`);
         
         // Aktifkan User
         await Users.update({ is_verified: true }, { where: { id: user.id } });
 
         // REDIRECT KE FRONTEND (Halaman Login) dengan parameter sukses
-        res.redirect('http://localhost:5173/?verified=true');
+        res.redirect(`${frontendUrl}/?verified=true`);
 
     } catch (error) {
         console.log(error);
-        res.redirect('http://localhost:5173/?error=expired');
+        res.redirect(`${frontendUrl}/?error=expired`);
     }
 }
 

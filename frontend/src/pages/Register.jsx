@@ -18,7 +18,7 @@ const Register = () => {
         }
 
         try {
-            await axios.post('http://localhost:5000/register', values);
+            await axios.post(`${import.meta.env.VITE_API_URL}/register`, values);
             message.success("Registrasi Berhasil! Cek terminal backend untuk link verifikasi.");
             navigate('/');
         } catch (error) {

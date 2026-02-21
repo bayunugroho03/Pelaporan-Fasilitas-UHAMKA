@@ -20,7 +20,7 @@ const MyReports = () => {
     const getReports = async () => {
         setLoading(true);
         try {
-            const res = await axiosJWT.get('http://localhost:5000/reports');
+            const res = await axiosJWT.get(`${import.meta.env.VITE_API_URL}/reports`);
             setReports(res.data); 
         } catch (error) {
             console.error(error);

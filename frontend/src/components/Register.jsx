@@ -8,10 +8,10 @@ const Register = () => {
     const navigate = useNavigate();
 
     const onFinish = async (values) => {
-        console.log("SAYA KLIK TOMBOL REGISTER - URL: http://localhost:5000/users");
+        console.log("SAYA KLIK TOMBOL REGISTER - URL: ${import.meta.env.VITE_API_URL}/users");
         try {
             // PERHATIKAN: URL ke /users
-            const res = await axios.post('http://localhost:5000/users', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/users`, {
                 name: values.name,
                 email: values.email,
                 password: values.password,

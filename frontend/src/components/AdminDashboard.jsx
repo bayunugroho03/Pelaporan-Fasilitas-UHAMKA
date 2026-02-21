@@ -18,20 +18,20 @@ const AdminDashboard = () => {
     });
 
     const getReports = async () => {
-        const response = await axiosJWT.get('http://localhost:5000/reports');
+        const response = await axiosJWT.get(`${import.meta.env.VITE_API_URL}/reports`);
         setReports(response.data);
     }
 
     const deleteReport = async (id) => {
         try {
-            await axiosJWT.delete(`http://localhost:5000/reports/${id}`);
+            await axiosJWT.delete(`${import.meta.env.VITE_API_URL}/reports/${id}`);
             getReports();
         } catch (error) { console.log(error); }
     }
 
     const acceptReport = async (id) => {
         try {
-            await axiosJWT.patch(`http://localhost:5000/reports/${id}/accept`);
+            await axiosJWT.patch(`${import.meta.env.VITE_API_URL}/reports/${id}/accept`);
             alert("Laporan diterima, Email notifikasi terkirim (Cek Console Backend)");
             getReports();
         } catch (error) { console.log(error); }

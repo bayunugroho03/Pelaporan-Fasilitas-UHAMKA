@@ -33,7 +33,7 @@ const StudentDashboard = () => {
         formData.append("suggestion", saran);
 
         try {
-            const res = await axiosJWT.post("http://localhost:5000/reports", formData, {
+            const res = await axiosJWT.post(`${import.meta.env.VITE_API_URL}/reports`, formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
             setReportId(res.data.reportId);
@@ -46,7 +46,7 @@ const StudentDashboard = () => {
     const submitQuestionnaire = async (e) => {
         e.preventDefault();
         try {
-            await axiosJWT.post("http://localhost:5000/questionnaire", {
+            await axiosJWT.post(`${import.meta.env.VITE_API_URL}/questionnaire`, {
                 reportId: reportId,
                 rating: rating
             });

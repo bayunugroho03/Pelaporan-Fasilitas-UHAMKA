@@ -32,7 +32,7 @@ const AdminMenu = () => {
     const getDashboardData = async () => {
         try {
             // Ambil Laporan
-            const resReports = await axios.get('http://localhost:5000/reports', {
+            const resReports = await axios.get(`${import.meta.env.VITE_API_URL}/reports`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const reports = resReports.data;
@@ -44,7 +44,7 @@ const AdminMenu = () => {
             setFinishedCount(reports.filter(r => r.status === 'accepted' || r.status === 'rejected').length);
 
             // Ambil User
-            const resUsers = await axios.get('http://localhost:5000/users', {
+            const resUsers = await axios.get(`${import.meta.env.VITE_API_URL}/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const users = resUsers.data;
