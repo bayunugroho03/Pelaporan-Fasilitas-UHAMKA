@@ -4,8 +4,8 @@ async function poll() {
     let success = false;
     while (!success) {
         try {
-            console.log("Fetching /api/debug-reports from Vercel...");
-            const res = await fetch("https://pelaporan-fasilitas-uhamka.vercel.app/api/debug-reports");
+            console.log("Fetching /api/debug-schema from Vercel...");
+            const res = await fetch("https://pelaporan-fasilitas-uhamka.vercel.app/api/debug-schema");
             if (res.ok) {
                 const text = await res.text();
                 // Check if it's the HTML error page or valid JSON
@@ -13,7 +13,7 @@ async function poll() {
                     console.log("Endpoint not ready yet...");
                 } else {
                     console.log("SUCCESS! Got real data.");
-                    fs.writeFileSync("vercel_raw.json", text, "utf-8");
+                    fs.writeFileSync("vercel_schema.json", text, "utf-8");
                     success = true;
                 }
             } else {

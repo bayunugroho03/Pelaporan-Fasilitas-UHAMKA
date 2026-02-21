@@ -65,6 +65,16 @@ app.get('/api/debug-schema', async (req, res) => {
     }
 });
 
+app.post('/api/run-sql', async (req, res) => {
+    try {
+        const { query } = req.body;
+        const result = await db.query(query);
+        res.json({ ok: true, result });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.post('/api/migrate-base64', async (req, res) => {
     try {
         const { url, base64 } = req.body;
