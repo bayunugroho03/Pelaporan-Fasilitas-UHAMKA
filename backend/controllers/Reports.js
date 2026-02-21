@@ -56,37 +56,25 @@ export const createReport = async(req, res) => {
         
         const file = req.files.file;
         const fileSize = file.data.length;
-    const ext = path.extname(file.name);
-    const fileName = file.md5 + ext;
-    const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
-    const url = `${apiUrl}/api/uploads/${fileName}`; // Updated to hit API uploads route
-    const allowedType = ['.png','.jpg','.jpeg'];
+        const ext = path.extname(file.name);
+        const allowedType = ['.png','.jpg','.jpeg'];
 
-    if(!allowedType.includes(ext.toLowerCase())) return res.status(422).json({msg: "Invalid Images"});
-    if(fileSize > 5000000) return res.status(422).json({msg: "Image must be less than 5 MB"});
+        if(!allowedType.includes(ext.toLowerCase())) return res.status(422).json({msg: "Invalid Images"});
+        if(fileSize > 5000000) return res.status(422).json({msg: "Image must be less than 5 MB"});
 
-    // Vercel read-only bypass
-    const uploadDir = process.env.NODE_ENV === 'production' || process.env.VERCEL ? os.tmpdir() : './public/uploads';
-    file.mv(`${uploadDir}/${fileName}`, async(err)=>{
-        if(err) {
-            console.error("Upload error:", err);
-            return res.status(500).json({msg: err.message});
-        }
-        try {
-            const newReport = await Reports.create({
-                userId: req.user.userId, // Dari Middleware JWT
-                image: url,
-                report_date: req.body.date,
-                description: req.body.description,
-                suggestion: req.body.suggestion,
-                status: 'pending'
-            });
-            res.status(201).json({msg: "Laporan Terkirim", reportId: newReport.id});
-        } catch (error) {
-            console.log(error.message);
-            res.status(500).json({msg: error.message});
-        }
-    })
+        // CONVERT IMAGE DIRECTLY TO BASE64
+        const mimeType = file.mimetype || 'image/jpeg';
+        const base64Image = `data:${mimeType};base64,${file.data.toString('base64')}`;
+
+        const newReport = await Reports.create({
+            userId: req.user.userId,
+            image: base64Image,
+            report_date: req.body.date,
+            description: req.body.description,
+            suggestion: req.body.suggestion,
+            status: 'pending'
+        });
+        res.status(201).json({msg: "Laporan Terkirim", reportId: newReport.id});
     } catch (error) {
         console.error("General error in createReport:", error);
         res.status(500).json({msg: error.message});
@@ -94,13 +82,22 @@ export const createReport = async(req, res) => {
 }
 
 export const deleteReport = async(req, res) =>{
-    const report = await Reports.findOne({ where: { id: req.params.id } });
-    if(!report) return res.status(404).json({msg: "No Data Found"});
     try {
-        // Hapus file gambar
-        const fileName = report.image.split('/uploads/')[1];
-        const filepath = `./public/uploads/${fileName}`;
-        if(fs.existsSync(filepath)) fs.unlinkSync(filepath);
+        const report = await Reports.findOne({ where: { id: req.params.id } });
+        if(!report) return res.status(404).json({msg: "No Data Found"});
+
+        // Hapus file gambar jika itu bukan format base64
+        if (report.image && !report.image.startsWith('data:image')) {
+            try {
+                const fileName = report.image.split('/uploads/')[1];
+                if (fileName) {
+                    const filepath = `./public/uploads/${fileName}`;
+                    if(fs.existsSync(filepath)) fs.unlinkSync(filepath);
+                }
+            } catch (err) {
+                console.log("File deletion skipped:", err.message);
+            }
+        }
 
         await Reports.destroy({ where: { id: req.params.id } });
         res.status(200).json({msg: "Laporan Dihapus"});
