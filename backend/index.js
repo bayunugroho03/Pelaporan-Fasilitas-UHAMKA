@@ -24,7 +24,7 @@ app.use(cookieParser()); // Middleware untuk membaca cookies (refresh token)
 app.use(express.json());
 app.use(fileUpload());
 app.use(express.static("public")); // Untuk akses gambar
-app.use(router);
+app.use('/api', router); // <--- Updated for vercel routing
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, ()=> console.log(`Server running at port ${PORT}`));

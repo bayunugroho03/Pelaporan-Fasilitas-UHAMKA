@@ -12,7 +12,7 @@ const Login = () => {
     const onFinish = async (values) => {
         try {
             // Request Login
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/login`, values);
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, values);
             
             // Simpan Token
             localStorage.setItem('token', res.data.accessToken);

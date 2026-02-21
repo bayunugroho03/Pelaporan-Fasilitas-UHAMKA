@@ -35,7 +35,7 @@ const CreateReport = () => {
             setLoading(true);
             
             // 2. KIRIM DATA PAKAI TOKEN BIASA (Lebih Cepat & Tidak Lag)
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/reports`, formData, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/reports`, formData, {
                 headers: {
                     'Authorization': `Bearer ${token}`, // Tempel token manual disini
                     'Content-Type': 'multipart/form-data'
@@ -62,7 +62,7 @@ const CreateReport = () => {
     // Fungsi Saat Kuesioner Dikirim
     const onFinishKuesioner = async (values) => {
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/questionnaire`, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/questionnaire`, {
                 reportId: reportId,
                 rating: values.rating
             }, {

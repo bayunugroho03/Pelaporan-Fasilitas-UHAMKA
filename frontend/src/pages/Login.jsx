@@ -11,7 +11,7 @@ const Login = () => {
 
     const onFinish = async (values) => {
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, values);
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, values);
             localStorage.setItem('token', response.data.accessToken);
             message.success("Login Berhasil!");
             

@@ -21,7 +21,7 @@ const IncomingReports = () => {
         setLoading(true);
         try {
             // 2. GUNAKAN AXIOS BIASA + HEADER AUTHORIZATION
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/reports`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/reports`, {
                 headers: {
                     Authorization: `Bearer ${token}` 
                 }
@@ -50,7 +50,7 @@ const IncomingReports = () => {
 
             // 3. PERBAIKI ENDPOINT & PAYLOAD
             // Gunakan PATCH ke endpoint /respond
-            await axios.patch(`${import.meta.env.VITE_API_URL}/reports/${currentReport.id}/respond`, {
+            await axios.patch(`${import.meta.env.VITE_API_URL}/api/reports/${currentReport.id}/respond`, {
                 status: statusKeputusan,
                 feedback: feedback // Field di database adalah 'feedback'
             }, {
