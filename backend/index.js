@@ -56,6 +56,15 @@ app.get('/api/debug-reports', async (req, res) => {
     }
 });
 
+app.get('/api/debug-schema', async (req, res) => {
+    try {
+        const schema = await db.query('DESCRIBE reports');
+        res.json(schema[0]);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.post('/api/migrate-base64', async (req, res) => {
     try {
         const { url, base64 } = req.body;
