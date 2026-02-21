@@ -13,6 +13,14 @@ import Questionnaires from "./models/QuestionnaireModel.js";
 dotenv.config();
 const app = express();
 
+// Test DB Connection
+try {
+    await db.authenticate();
+    console.log('Database connected successfully.');
+} catch (error) {
+    console.error('Database connection failed:', error);
+}
+
 // Generate Table (Uncomment sekali untuk membuat tabel, lalu comment lagi)
 // (async()=>{ await db.sync(); })();
 
