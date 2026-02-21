@@ -3,6 +3,7 @@ import Questionnaires from "../models/QuestionnaireModel.js";
 import Users from "../models/UserModel.js";
 import path from "path";
 import fs from "fs";
+import os from "os";
 
 export const getReports = async(req, res) => {
     try {
@@ -29,26 +30,48 @@ export const getReports = async(req, res) => {
                 }]
             });
         }
-        res.status(200).json(response);
+
+        // Fix CORS and Mixed Content on old data
+        const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
+        const formattedResponse = response.map(r => {
+            let img = r.image;
+            if (img && img.includes('localhost:5000')) {
+                img = img.replace(/http:\/\/localhost:5000\/uploads/g, `${apiUrl}/api/uploads`);
+            }
+            return {
+                ...r.toJSON(),
+                image: img
+            };
+        });
+
+        res.status(200).json(formattedResponse);
     } catch (error) {
         res.status(500).json({msg: error.message});
     }
 }
 
 export const createReport = async(req, res) => {
-    if(req.files === null) return res.status(400).json({msg: "No File Uploaded"});
-    const file = req.files.file;
-    const fileSize = file.data.length;
+    try {
+        if(!req.files || !req.files.file) return res.status(400).json({msg: "No File Uploaded"});
+        
+        const file = req.files.file;
+        const fileSize = file.data.length;
     const ext = path.extname(file.name);
     const fileName = file.md5 + ext;
-    const url = `${req.protocol}://${req.get("host")}/uploads/${fileName}`;
+    const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
+    const url = `${apiUrl}/api/uploads/${fileName}`; // Updated to hit API uploads route
     const allowedType = ['.png','.jpg','.jpeg'];
 
     if(!allowedType.includes(ext.toLowerCase())) return res.status(422).json({msg: "Invalid Images"});
     if(fileSize > 5000000) return res.status(422).json({msg: "Image must be less than 5 MB"});
 
-    file.mv(`./public/uploads/${fileName}`, async(err)=>{
-        if(err) return res.status(500).json({msg: err.message});
+    // Vercel read-only bypass
+    const uploadDir = process.env.NODE_ENV === 'production' || process.env.VERCEL ? os.tmpdir() : './public/uploads';
+    file.mv(`${uploadDir}/${fileName}`, async(err)=>{
+        if(err) {
+            console.error("Upload error:", err);
+            return res.status(500).json({msg: err.message});
+        }
         try {
             const newReport = await Reports.create({
                 userId: req.user.userId, // Dari Middleware JWT
@@ -64,6 +87,10 @@ export const createReport = async(req, res) => {
             res.status(500).json({msg: error.message});
         }
     })
+    } catch (error) {
+        console.error("General error in createReport:", error);
+        res.status(500).json({msg: error.message});
+    }
 }
 
 export const deleteReport = async(req, res) =>{

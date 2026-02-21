@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import db from "./config/Database.js";
 import fileUpload from "express-fileupload";
 import router from "./routes/index.js";
+import os from "os";
+
 // Import Models untuk auto generate table jika belum ada
 import Users from "./models/UserModel.js";
 import Reports from "./models/ReportModel.js";
@@ -32,6 +34,8 @@ app.use(cookieParser()); // Middleware untuk membaca cookies (refresh token)
 app.use(express.json());
 app.use(fileUpload());
 app.use(express.static("public")); // Untuk akses gambar
+const uploadPath = process.env.NODE_ENV === 'production' || process.env.VERCEL ? os.tmpdir() : './public/uploads';
+app.use('/api/uploads', express.static(uploadPath));
 app.use('/api', router); // <--- Updated for vercel routing
 
 const PORT = process.env.PORT || 5000;
