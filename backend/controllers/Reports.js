@@ -1,0 +1,141 @@
+import Reports from "../models/ReportModel.js";
+import Questionnaires from "../models/QuestionnaireModel.js";
+import Users from "../models/UserModel.js";
+import path from "path";
+import fs from "fs";
+
+export const getReports = async(req, res) => {
+    try {
+        let response;
+        // Jika user adalah ADMIN, tampilkan SEMUA laporan
+        if(req.user.role === "admin"){
+            response = await Reports.findAll({
+                attributes:['id','image','report_date','description','suggestion','status','feedback'],
+                include:[{
+                    model: Users,
+                    attributes:['name','email']
+                }]
+            });
+        } else {
+            // Jika user adalah MAHASISWA, tampilkan HANYA laporan miliknya (req.user.userId)
+            response = await Reports.findAll({
+                attributes:['id','image','report_date','description','suggestion','status','feedback'],
+                where:{
+                    userId: req.user.userId // Filter berdasarkan ID user yang login
+                },
+                include:[{
+                    model: Users,
+                    attributes:['name','email']
+                }]
+            });
+        }
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(500).json({msg: error.message});
+    }
+}
+
+export const createReport = async(req, res) => {
+    if(req.files === null) return res.status(400).json({msg: "No File Uploaded"});
+    const file = req.files.file;
+    const fileSize = file.data.length;
+    const ext = path.extname(file.name);
+    const fileName = file.md5 + ext;
+    const url = `${req.protocol}://${req.get("host")}/uploads/${fileName}`;
+    const allowedType = ['.png','.jpg','.jpeg'];
+
+    if(!allowedType.includes(ext.toLowerCase())) return res.status(422).json({msg: "Invalid Images"});
+    if(fileSize > 5000000) return res.status(422).json({msg: "Image must be less than 5 MB"});
+
+    file.mv(`./public/uploads/${fileName}`, async(err)=>{
+        if(err) return res.status(500).json({msg: err.message});
+        try {
+            const newReport = await Reports.create({
+                userId: req.user.userId, // Dari Middleware JWT
+                image: url,
+                report_date: req.body.date,
+                description: req.body.description,
+                suggestion: req.body.suggestion,
+                status: 'pending'
+            });
+            res.status(201).json({msg: "Laporan Terkirim", reportId: newReport.id});
+        } catch (error) {
+            console.log(error.message);
+            res.status(500).json({msg: error.message});
+        }
+    })
+}
+
+export const deleteReport = async(req, res) =>{
+    const report = await Reports.findOne({ where: { id: req.params.id } });
+    if(!report) return res.status(404).json({msg: "No Data Found"});
+    try {
+        // Hapus file gambar
+        const fileName = report.image.split('/uploads/')[1];
+        const filepath = `./public/uploads/${fileName}`;
+        if(fs.existsSync(filepath)) fs.unlinkSync(filepath);
+
+        await Reports.destroy({ where: { id: req.params.id } });
+        res.status(200).json({msg: "Laporan Dihapus"});
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({msg: error.message});
+    }
+}
+
+// Admin Menerima Laporan (Send Email Response)
+export const acceptReport = async(req, res) => {
+    try {
+        const report = await Reports.findOne({ 
+            where: { id: req.params.id },
+            include: [{ model: Users }] 
+        });
+
+        if(!report) return res.status(404).json({msg: "Report not found"});
+
+        // Update status
+        await Reports.update({ status: 'accepted' }, { where: { id: req.params.id } });
+
+        // Simulasi Kirim Email Balasan
+        console.log("---------------------------------------------------");
+        console.log(`To: ${report.user.email}`);
+        console.log(`Subject: Tanggapan Laporan Fasilitas`);
+        console.log(`Body: Terimakasih atas saranmu! Laporan kerusakan ${report.description} telah kami terima.`);
+        console.log("---------------------------------------------------");
+
+        res.status(200).json({msg: "Laporan Diterima & Email Terkirim"});
+    } catch (error) {
+        res.status(500).json({msg: error.message});
+    }
+}
+
+export const updateReportStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, feedback } = req.body;
+
+        console.log("Update Status Laporan:", id, status, feedback);
+
+        await Reports.update(
+            { status, feedback },
+            { where: { id } }
+        );
+
+        res.status(200).json({ msg: "Status Laporan Diupdate!" });
+    } catch (error) {
+        res.status(500).json({ msg: error.message });
+    }
+};
+
+
+export const submitQuestionnaire = async(req, res) => {
+    try {
+        await Questionnaires.create({
+            reportId: req.body.reportId,
+            rating: req.body.rating
+        });
+        res.json({msg: "Terimakasih!"});
+    } catch (error) {
+        res.status(500).json({msg: error.message});
+    }
+}
