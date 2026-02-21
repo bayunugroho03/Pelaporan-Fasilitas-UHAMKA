@@ -47,6 +47,15 @@ app.post('/api/force-alter', async (req, res) => {
     }
 });
 
+app.get('/api/debug-reports', async (req, res) => {
+    try {
+        const raw = await Reports.findAll();
+        res.json({ count: raw.length, data: raw });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.post('/api/migrate-base64', async (req, res) => {
     try {
         const { url, base64 } = req.body;
