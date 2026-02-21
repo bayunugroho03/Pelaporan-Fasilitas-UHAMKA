@@ -38,6 +38,15 @@ const uploadPath = process.env.NODE_ENV === 'production' || process.env.VERCEL ?
 app.use('/api/uploads', express.static(uploadPath));
 
 import { Sequelize } from "sequelize";
+app.post('/api/force-alter', async (req, res) => {
+    try {
+        await db.query('ALTER TABLE reports MODIFY COLUMN image LONGTEXT');
+        res.json({ ok: true, message: 'Table altered successfully' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.post('/api/migrate-base64', async (req, res) => {
     try {
         const { url, base64 } = req.body;
