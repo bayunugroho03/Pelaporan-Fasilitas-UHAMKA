@@ -22,7 +22,7 @@ export const getReports = async(req, res) => {
             response = await Reports.findAll({
                 attributes:['id','image','report_date','description','suggestion','status','feedback'],
                 where:{
-                    userId: req.user.userId // Filter berdasarkan ID user yang login
+                    userId: req.user.userId || req.user.id // Filter berdasarkan ID user yang login
                 },
                 include:[{
                     model: Users,
@@ -67,7 +67,7 @@ export const createReport = async(req, res) => {
         const base64Image = `data:${mimeType};base64,${file.data.toString('base64')}`;
 
         const newReport = await Reports.create({
-            userId: req.user.userId,
+            userId: req.user.userId || req.user.id,
             image: base64Image,
             report_date: req.body.date,
             description: req.body.description,
