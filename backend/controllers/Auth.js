@@ -36,7 +36,17 @@ export const Login = async(req, res) => {
         const match = await bcrypt.compare(req.body.password, user.password);
         if(!match) return res.status(400).json({msg: "Password Salah"});
 
-        const userId = user.id || user.dataValues?.id || user.getDataValue('id');
+        let userId = user.id ?? user.dataValues?.id ?? user.getDataValue('id');
+        
+        // Debugging super jika TiDB secara aneh memberikan user tanpa ID
+        if (userId == null) {
+            return res.status(500).json({
+                msg: "FATAL: TiDB tidak mengirimkan ID user. Lihat Payload.",
+                debugKeys: Object.keys(user.dataValues || {}),
+                debugRaw: user.dataValues
+            });
+        }
+
         const name = user.name;
         const email = user.email;
         const role = user.role;

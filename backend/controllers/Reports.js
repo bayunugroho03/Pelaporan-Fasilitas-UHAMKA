@@ -70,7 +70,7 @@ export const createReport = async(req, res) => {
         let resolvedUserId = req.user.userId || req.user.id;
         if (!resolvedUserId && req.user.email) {
             const usr = await Users.findOne({ where: { email: req.user.email } });
-            if (usr) resolvedUserId = usr.id || usr.dataValues?.id || usr.getDataValue('id');
+            if (usr) resolvedUserId = usr.id ?? usr.dataValues?.id ?? usr.getDataValue('id');
         }
         if (!resolvedUserId) {
             throw new Error("Sesi error karena hilangnya ID pada token. Silahkan LOGOUT dan LOGIN ulang.");
