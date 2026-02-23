@@ -4,7 +4,7 @@ import Users from "./UserModel.js";
 const { DataTypes } = Sequelize;
 
 const Reports = db.define('reports', {
-    image: DataTypes.STRING,
+    image: DataTypes.TEXT('long'),
     report_date: DataTypes.STRING,
     description: DataTypes.TEXT,
     suggestion: DataTypes.TEXT,

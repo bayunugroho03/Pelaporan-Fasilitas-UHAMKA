@@ -23,9 +23,15 @@ try {
     console.error('Database connection failed:', error);
 }
 
-// Generate Table (Uncomment sekali untuk membuat tabel, lalu comment lagi)
-// (async()=>{ await db.sync(); })();
-
+// Rute Migrasi Skema DB Langsung (Hanya digunakan sekali lewat browser)
+app.get('/api/migrate', async (req, res) => {
+    try {
+        await db.sync({ alter: true });
+        res.json({ msg: "Database migrated successfully. Image column should now be LONGTEXT." });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 app.use(cors({ 
     credentials: true, 
     origin: process.env.FRONTEND_URL || 'http://localhost:5173' 
