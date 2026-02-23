@@ -19,6 +19,8 @@ const app = express();
 try {
     await db.authenticate();
     console.log('Database connected successfully.');
+    // Auto Migrate (Mengubah manual ke LONGTEXT tanpa sinkronisasi mematikan)
+    await db.query('ALTER TABLE reports MODIFY COLUMN image LONGTEXT;').catch(e => console.log('Auto-migrate msg:', e.message));
 } catch (error) {
     console.error('Database connection failed:', error);
 }

@@ -66,8 +66,18 @@ export const createReport = async(req, res) => {
         const mimeType = file.mimetype || 'image/jpeg';
         const base64Image = `data:${mimeType};base64,${file.data.toString('base64')}`;
 
+        // Auto-Recovery Fallback untuk JWT kedaluwarsa/korup (tanpa userId)
+        let resolvedUserId = req.user.userId || req.user.id;
+        if (!resolvedUserId && req.user.email) {
+            const usr = await Users.findOne({ where: { email: req.user.email } });
+            if (usr) resolvedUserId = usr.id;
+        }
+        if (!resolvedUserId) {
+            return res.status(401).json({msg: "Sesi error karena hilangnya ID pada token. Silahkan LOGOUT dan LOGIN ulang."});
+        }
+
         const newReport = await Reports.create({
-            userId: req.user.userId || req.user.id,
+            userId: resolvedUserId,
             image: base64Image,
             report_date: req.body.date,
             description: req.body.description,
@@ -77,7 +87,7 @@ export const createReport = async(req, res) => {
         res.status(201).json({msg: "Laporan Terkirim", reportId: newReport.id});
     } catch (error) {
         console.error("General error in createReport:", error);
-        res.status(500).json({msg: error.message});
+        res.status(500).json({msg: error.message, debugUser: req.user});
     }
 }
 
