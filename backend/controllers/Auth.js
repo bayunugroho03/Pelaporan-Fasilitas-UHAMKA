@@ -36,7 +36,7 @@ export const Login = async(req, res) => {
         const match = await bcrypt.compare(req.body.password, user.password);
         if(!match) return res.status(400).json({msg: "Password Salah"});
 
-        const userId = user.id;
+        const userId = user.id || user.dataValues?.id || user.getDataValue('id');
         const name = user.name;
         const email = user.email;
         const role = user.role;
