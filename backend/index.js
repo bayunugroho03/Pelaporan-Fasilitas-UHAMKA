@@ -26,7 +26,7 @@ try {
 // Rute Migrasi Skema DB Langsung (Hanya digunakan sekali lewat browser)
 app.get('/api/migrate', async (req, res) => {
     try {
-        await db.sync({ alter: true });
+        await db.query('ALTER TABLE reports MODIFY COLUMN image LONGTEXT;');
         res.json({ msg: "Database migrated successfully. Image column should now be LONGTEXT." });
     } catch (e) {
         res.status(500).json({ error: e.message });
