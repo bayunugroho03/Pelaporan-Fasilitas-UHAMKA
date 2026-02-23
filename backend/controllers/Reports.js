@@ -73,7 +73,7 @@ export const createReport = async(req, res) => {
             if (usr) resolvedUserId = usr.id;
         }
         if (!resolvedUserId) {
-            return res.status(401).json({msg: "Sesi error karena hilangnya ID pada token. Silahkan LOGOUT dan LOGIN ulang."});
+            throw new Error("Sesi error karena hilangnya ID pada token. Silahkan LOGOUT dan LOGIN ulang.");
         }
 
         const newReport = await Reports.create({
