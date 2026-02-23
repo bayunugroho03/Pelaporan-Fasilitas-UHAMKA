@@ -16,7 +16,8 @@ const transporter = nodemailer.createTransport({
 export const Login = async(req, res) => {
     try {
         const user = await Users.findOne({
-            where: { email: req.body.email }
+            where: { email: req.body.email },
+            raw: true // Kunci Utama: Bypass Map TiDB
         });
         
         if(!user) return res.status(404).json({msg: "Email tidak ditemukan"});
@@ -28,7 +29,7 @@ export const Login = async(req, res) => {
                  return res.status(403).json({msg: "Akses Ditolak. Mahasiswa wajib menggunakan email @uhamka.ac.id"});
             }
             // 2. Cek Status Verifikasi
-            if(user.is_verified !== true){
+            if(user.is_verified !== true && user.is_verified !== 1) { // 1 = true (boolean format in TiDB)
                 return res.status(403).json({msg: "Akun belum aktif! Silahkan cek inbox email Anda untuk verifikasi."});
             }
         }
@@ -36,16 +37,7 @@ export const Login = async(req, res) => {
         const match = await bcrypt.compare(req.body.password, user.password);
         if(!match) return res.status(400).json({msg: "Password Salah"});
 
-        let userId = user.id ?? user.dataValues?.id ?? user.getDataValue('id');
-        
-        // Debugging super jika TiDB secara aneh memberikan user tanpa ID
-        if (userId == null) {
-            return res.status(500).json({
-                msg: "FATAL: TiDB tidak mengirimkan ID user. Lihat Payload.",
-                debugKeys: Object.keys(user.dataValues || {}),
-                debugRaw: user.dataValues
-            });
-        }
+        let userId = user.id;
 
         const name = user.name;
         const email = user.email;
