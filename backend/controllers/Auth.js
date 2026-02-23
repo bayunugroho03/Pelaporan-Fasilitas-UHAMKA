@@ -98,7 +98,11 @@ export const Register = async(req, res) => {
         const verificationToken = jwt.sign({email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1d'});
 
         // 4. Kirim Email Verifikasi
-        const apiUrl = process.env.API_URL || 'http://localhost:5000';
+        // Hasilkan domain tujuan secara dinamik langsung dari Request Host
+        // Mengabaikan process.env.API_URL karena terbukti malah berisi localhost:5000 di konfigurasi Vercel
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const host = req.get('host');
+        const apiUrl = host ? `${protocol}://${host}/api` : 'http://localhost:5000/api';
         const url = `${apiUrl}/verify-email?token=${verificationToken}`;
         
         await transporter.sendMail({
@@ -123,7 +127,11 @@ export const Register = async(req, res) => {
 
 // --- VERIFY LINK ---
 export const VerifyEmailLink = async(req, res) => {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const host = req.get('host');
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production';
+    const defaultFrontendUrl = isProduction ? `${protocol}://${host}` : 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || defaultFrontendUrl;
     try {
         const { token } = req.query;
         if(!token) return res.redirect(`${frontendUrl}/?error=invalid_token`);
