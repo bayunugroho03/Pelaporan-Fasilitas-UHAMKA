@@ -5,25 +5,63 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
+export const getReportImage = async(req, res) => {
+    try {
+        const report = await Reports.findOne({
+            where: { id: req.params.id },
+            attributes: ['image']
+        });
+        if (!report || !report.image) {
+            return res.status(404).json({msg: "No image found"});
+        }
+
+        if (report.image.startsWith('data:image')) {
+            const matches = report.image.match(/^data:(image\/\w+);base64,(.*)$/);
+            if (matches && matches.length === 3) {
+                const buffer = Buffer.from(matches[2], 'base64');
+                res.writeHead(200, {
+                    'Content-Type': matches[1],
+                    'Content-Length': buffer.length
+                });
+                return res.end(buffer);
+            }
+        }
+        
+        let imgUrl = report.image;
+        if (imgUrl.includes('localhost:5000')) {
+            const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
+            imgUrl = imgUrl.replace(/http:\/\/localhost:5000\/uploads/g, `${apiUrl}/api/uploads`);
+        }
+        return res.redirect(imgUrl);
+
+    } catch (e) {
+        res.status(500).json({msg: e.message});
+    }
+}
+
 export const getReports = async(req, res) => {
     try {
         let response;
-        // Jika user adalah ADMIN, tampilkan SEMUA laporan
+        
+        let resolvedUserId = null;
+        if (req.user) {
+            resolvedUserId = req.user.userId || req.user.id || req.user.ID;
+        }
+        if (!resolvedUserId) resolvedUserId = 1;
+
+        // JANGAN FETCH 'image' AGAR MEMORY VERCEL TIDAK CRASH (MENCEGAH ERROR 500 PAYLOAD TOO LARGE)
         if(req.user.role === "admin"){
             response = await Reports.findAll({
-                attributes:['id','image','report_date','description','suggestion','status','feedback'],
+                attributes:['id','report_date','description','suggestion','status','feedback'],
                 include:[{
                     model: Users,
                     attributes:['name','email']
                 }]
             });
         } else {
-            // Jika user adalah MAHASISWA, tampilkan HANYA laporan miliknya (req.user.userId)
             response = await Reports.findAll({
-                attributes:['id','image','report_date','description','suggestion','status','feedback'],
-                where:{
-                    userId: req.user.userId || req.user.id // Filter berdasarkan ID user yang login
-                },
+                attributes:['id','report_date','description','suggestion','status','feedback'],
+                where:{ userId: resolvedUserId },
                 include:[{
                     model: Users,
                     attributes:['name','email']
@@ -31,16 +69,11 @@ export const getReports = async(req, res) => {
             });
         }
 
-        // Fix CORS and Mixed Content on old data
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
         const formattedResponse = response.map(r => {
-            let img = r.image;
-            if (img && img.includes('localhost:5000')) {
-                img = img.replace(/http:\/\/localhost:5000\/uploads/g, `${apiUrl}/api/uploads`);
-            }
             return {
                 ...r.toJSON(),
-                image: img
+                image: `${apiUrl}/api/reports/${r.id}/image`
             };
         });
 
