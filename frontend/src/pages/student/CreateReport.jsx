@@ -19,10 +19,7 @@ const CreateReport = () => {
 
     // Fungsi Saat Form Laporan Dikirim
     const onFinishForm = async (values) => {
-        if(!token) {
-            message.error("Sesi habis, silakan login ulang");
-            return navigate("/");
-        }
+        // Blok pengecekan Token DIHAPUS agar bisa terus mengirim laporan
         if(fileList.length === 0) return message.error("Harap upload bukti gambar!");
         
         const formData = new FormData();
