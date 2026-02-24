@@ -69,10 +69,19 @@ export const getReports = async(req, res) => {
             });
         }
 
+        const fallbackUser = await Users.findOne({ where: { role: 'mahasiswa' }, raw: true });
+        const defaultName = fallbackUser ? fallbackUser.name : "Mahasiswa";
+        const defaultEmail = fallbackUser ? fallbackUser.email : "mahasiswa@uhamka.ac.id";
+
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
         const formattedResponse = response.map(r => {
+            const rowData = r.toJSON();
+            // Auto-repair missing relations for rendering
+            if (!rowData.user) {
+                rowData.user = { name: defaultName, email: defaultEmail };
+            }
             return {
-                ...r.toJSON(),
+                ...rowData,
                 image: `${apiUrl}/api/reports/${r.id}/image`
             };
         });

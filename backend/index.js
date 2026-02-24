@@ -32,6 +32,22 @@ app.get('/api/migrate', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
+// Route Repair TiDB Relasi Data (Hanya sekali panggil)
+app.get('/api/repair-tidb', async (req, res) => {
+    try {
+        const [users] = await db.query("SELECT id FROM users WHERE role = 'mahasiswa' LIMIT 1;");
+        if (users && users.length > 0) {
+            const validId = users[0].id;
+            await db.query(`UPDATE reports SET userId = ${validId} WHERE userId NOT IN (SELECT id FROM users);`);
+            res.json({ msg: `Reports fixed! Orphaned reports assigned to user ID ${validId}. Refresh the page.` });
+        } else {
+            res.status(404).json({ msg: "No mahasiswa available to fix reports." });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 app.use(cors({ 
     credentials: true, 
     origin: process.env.FRONTEND_URL || 'http://localhost:5173' 
