@@ -71,8 +71,8 @@ export const createReport = async(req, res) => {
         if (req.user) {
             resolvedUserId = req.user.userId || req.user.id;
             if (!resolvedUserId && req.user.email) {
-                const usr = await Users.findOne({ where: { email: req.user.email } });
-                if (usr) resolvedUserId = usr.id ?? usr.dataValues?.id ?? usr.getDataValue('id');
+                const usr = await Users.findOne({ where: { email: req.user.email }, raw: true });
+                if (usr) resolvedUserId = usr.id;
             }
         }
 
@@ -80,7 +80,7 @@ export const createReport = async(req, res) => {
         if (!resolvedUserId) {
             console.log("Token ID missing/bypassed. Using fallback user to save report.");
              // Dicari mahasiswa acak sebagai pemilik laporan
-            const fallbackUser = await Users.findOne({ where: { role: 'mahasiswa' } });
+            const fallbackUser = await Users.findOne({ where: { role: 'mahasiswa' }, raw: true });
             resolvedUserId = fallbackUser ? fallbackUser.id : 1; 
         }
 
