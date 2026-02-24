@@ -68,12 +68,15 @@ export const createReport = async(req, res) => {
 
         // Auto-Recovery Fallback untuk JWT kedaluwarsa/korup (tanpa userId)
         let resolvedUserId = req.user.userId || req.user.id;
+        let dbUserDump = null;
         if (!resolvedUserId && req.user.email) {
             const usr = await Users.findOne({ where: { email: req.user.email } });
+            dbUserDump = usr ? usr.get({ plain: true }) : null;
             if (usr) resolvedUserId = usr.id ?? usr.dataValues?.id ?? usr.getDataValue('id');
         }
         if (!resolvedUserId) {
-            throw new Error("Sesi error karena hilangnya ID pada token. Silahkan LOGOUT dan LOGIN ulang.");
+            console.error("Missing resolvedUserId. usr dump:", dbUserDump);
+             return res.status(401).json({msg: "Sesi error karena hilangnya ID pada token. Silahkan LOGOUT dan LOGIN ulang."});
         }
 
         const newReport = await Reports.create({

@@ -50,8 +50,10 @@ const CreateReport = () => {
         } catch (error) {
             setLoading(false);
             console.error(error);
-            // Jika token ditolak backend (403), suruh login lagi
+            // Jika token ditolak backend (401/403), hapus token usang & suruh login lagi
             if(error.response && (error.response.status === 401 || error.response.status === 403)){
+                localStorage.removeItem('token');
+                message.error(error.response.data.msg || "Sesi expired, silakan login ulang");
                 navigate("/");
             } else {
                 message.error("Gagal mengirim laporan. Pastikan Server Nyala.");
