@@ -19,9 +19,6 @@ const app = express();
 try {
     await db.authenticate();
     console.log('Database connected successfully.');
-    // Auto Migrate (TiDB tidak support MODIFY string ke LONGTEXT, jadi DROP dan ADD)
-    await db.query('ALTER TABLE reports DROP COLUMN image;').catch(e => console.log('Drop image failed:', e.message));
-    await db.query('ALTER TABLE reports ADD COLUMN image LONGTEXT;').catch(e => console.log('Add image failed:', e.message));
 } catch (error) {
     console.error('Database connection failed:', error);
 }
