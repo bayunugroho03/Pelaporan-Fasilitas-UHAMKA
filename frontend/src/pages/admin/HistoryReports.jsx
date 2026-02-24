@@ -37,9 +37,8 @@ const HistoryReports = () => {
     const columns = [
         { 
             title: 'Pelapor', 
-            dataIndex: ['user', 'name'], 
             key: 'user',
-            render: (text) => <b>{text}</b>
+            render: (_, record) => <b>{record.user && record.user.name ? record.user.name : "Tidak Diketahui"}</b>
         },
         { 
             title: 'Tanggal', 
