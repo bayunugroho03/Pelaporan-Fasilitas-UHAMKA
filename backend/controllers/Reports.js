@@ -52,7 +52,7 @@ export const getReports = async(req, res) => {
         // JANGAN FETCH 'image' AGAR MEMORY VERCEL TIDAK CRASH (MENCEGAH ERROR 500 PAYLOAD TOO LARGE)
         if(req.user.role === "admin"){
             response = await Reports.findAll({
-                attributes:['id','userId','report_date','description','suggestion','status','feedback'],
+                attributes: { exclude: ['image'] },
                 include:[{
                     model: Users,
                     attributes:['name','email']
@@ -60,7 +60,7 @@ export const getReports = async(req, res) => {
             });
         } else {
             response = await Reports.findAll({
-                attributes:['id','userId','report_date','description','suggestion','status','feedback'],
+                attributes: { exclude: ['image'] },
                 where:{ userId: resolvedUserId },
                 include:[{
                     model: Users,
@@ -72,8 +72,15 @@ export const getReports = async(req, res) => {
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
         const formattedResponse = response.map(r => {
             const rowData = r.toJSON();
-            // Auto-repair missing relations for rendering (hanya jika benar-benar kosong)
-            if (!rowData.user) {
+            
+            // Re-map the user property to 'user' lowercase to ensure frontend compatibility
+            // Sequelize can return it as 'User', 'users', or 'Users' depending on the model/alias configuration
+            const extractedUser = rowData.user || rowData.User || rowData.users || rowData.Users;
+            
+            if (extractedUser) {
+                rowData.user = extractedUser;
+            } else {
+                // Auto-repair missing relations for rendering (hanya jika benar-benar kosong)
                 rowData.user = { name: "Pengguna Tidak Dikenal", email: "unknown@uhamka.ac.id" };
             }
             return {
