@@ -52,8 +52,6 @@ export const getReports = async(req, res) => {
         // JANGAN FETCH 'image' AGAR MEMORY VERCEL TIDAK CRASH
         const opts = {
             attributes: { exclude: ['image'] },
-            raw: true,
-            nest: true, // Akan mencoba menyusun object 'user' jika alias berhasil
             include:[{
                 model: Users,
                 attributes:['name','email']
@@ -71,33 +69,19 @@ export const getReports = async(req, res) => {
 
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
         const formattedResponse = response.map(r => {
-            // Karena raw: true, r sudah berupa object murni (bukan instance ORM)
-            const rowData = { ...r };
+            // Karena kita menghapus raw:true agar Sequelize jalan normal kembali
+            const rowData = r.toJSON();
             
-            // Re-map the user property. Sequelize with raw & nest might produce 'user' or 'Users'.
-            // Atau TiDB mengembalikannya flat seperti 'user.name'
+            // Re-map the user property. Sequelize generally returns lowercase 'user' or 'User' or 'users'.
             let extractedUser = rowData.user || rowData.User || rowData.users || rowData.Users || rowData.USER;
             
-            // Deteksi jika data rata / unnested akibat driver mysql TiDB bypass 'nest: true'
-            if (!extractedUser && (rowData['user.name'] || rowData['Users.name'])) {
-                extractedUser = {
-                    name: rowData['user.name'] || rowData['Users.name'] || rowData['User.name'] || rowData['users.name'],
-                    email: rowData['user.email'] || rowData['Users.email'] || rowData['User.email'] || rowData['users.email']
-                };
-            }
-
-            if (extractedUser && extractedUser.name) {
+            // Perbaikan ekstraksi data murni jika terdapat nesting di dalamnya.
+            if (extractedUser) {
                 rowData.user = extractedUser;
             } else {
                 // Auto-repair missing relations for rendering (hanya jika benar-benar kosong)
-                rowData.user = { name: "Pengguna Tidak Dikenal", email: "unknown@uhamka.ac.id" };
+                rowData.user = { name: "Tidak Diketahui", email: "unknown@uhamka.ac.id" };
             }
-
-            // Hapus sisa key flat jika ada untuk kebersihan
-            delete rowData['user.name'];
-            delete rowData['user.email'];
-            delete rowData['Users.name'];
-            delete rowData['Users.email'];
 
             return {
                 ...rowData,
