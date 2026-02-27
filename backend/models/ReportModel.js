@@ -16,7 +16,7 @@ const Reports = db.define('reports', {
     userId: DataTypes.INTEGER
 }, { freezeTableName: true });
 
-Users.hasMany(Reports);
-Reports.belongsTo(Users, { foreignKey: 'userId' });
+Users.hasMany(Reports, { foreignKey: 'userId', sourceKey: 'id' });
+Reports.belongsTo(Users, { foreignKey: 'userId', targetKey: 'id' });
 
 export default Reports;

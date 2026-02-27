@@ -68,8 +68,6 @@ export const getReports = async(req, res) => {
         }
 
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
-        const mahasiswaUsers = await Users.findAll({ where: { role: 'mahasiswa' } });
-        let mIndex = 0;
 
         const formattedResponse = await Promise.all(response.map(async (r) => {
             // Karena kita menghapus raw:true agar Sequelize jalan normal kembali
@@ -81,25 +79,15 @@ export const getReports = async(req, res) => {
             // Perbaikan ekstraksi data murni jika terdapat nesting di dalamnya.
             if (extractedUser && extractedUser.name) {
                 rowData.user = extractedUser;
+            } else if (extractedUser && (extractedUser.name === undefined || extractedUser.name === null)) {
+                // Jaga-jaga jika attribute ada yang uppercase dari TiDB
+                rowData.user = { 
+                    name: extractedUser.NAME || extractedUser.Name || "Tidak Diketahui",
+                    email: extractedUser.EMAIL || extractedUser.Email || "unknown@uhamka.ac.id" 
+                };
             } else {
-                // ✨ AUTO-REPAIR DATABASE BUG ✨
-                // Jika database masih menyimpan userId yang tidak valid (orphaned), kita perbaiki secara permanen.
-                if (mahasiswaUsers.length > 0) {
-                    const fallbackUser = mahasiswaUsers[mIndex % mahasiswaUsers.length];
-                    mIndex++;
-                    
-                    try {
-                        // Secara permanen memperbaiki kolom userId laporan ini di TiDB cloud
-                        await r.update({ userId: fallbackUser.id });
-                    } catch(e) { 
-                        console.error("Auto-repair gagal:", e.message); 
-                    }
-                    
-                    rowData.user = { name: fallbackUser.name, email: fallbackUser.email };
-                } else {
-                    // Jika sama sekali tidak ada mahasiswa di database (ekstrem fallback)
-                    rowData.user = { name: "Tidak Diketahui", email: "unknown@uhamka.ac.id" };
-                }
+                // Jika tidak ada mahasiswa yang terkait (orphaned)
+                rowData.user = { name: "Tidak Diketahui", email: "unknown@uhamka.ac.id" };
             }
 
             return {
