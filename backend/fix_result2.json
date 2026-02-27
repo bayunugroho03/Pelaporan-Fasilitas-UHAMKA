@@ -1,0 +1,74 @@
+{
+  "fixes": [
+    {
+      "id": 30001,
+      "result": {
+        "msg": "Berhasil update userId laporan id=30001",
+        "before": {
+          "id": 30001,
+          "userId": 6
+        },
+        "after": {
+          "id": 30001,
+          "userId": 6
+        }
+      }
+    },
+    {
+      "id": 90001,
+      "result": {
+        "msg": "Berhasil update userId laporan id=90001",
+        "before": {
+          "id": 90001,
+          "userId": 6
+        },
+        "after": {
+          "id": 90001,
+          "userId": 6
+        }
+      }
+    }
+  ],
+  "reports": [
+    {
+      "id": 1,
+      "userId": 6,
+      "name": "Bayu Cahyo",
+      "status": "accepted",
+      "date": "2026-02-07",
+      "desc": "asd"
+    },
+    {
+      "id": 30001,
+      "userId": 6,
+      "name": "Bayu Cahyo",
+      "status": "accepted",
+      "date": "2026-02-03",
+      "desc": "gjhgh"
+    },
+    {
+      "id": 60001,
+      "userId": 6,
+      "name": "Bayu Cahyo",
+      "status": "pending",
+      "date": "2026-02-01",
+      "desc": "asd"
+    },
+    {
+      "id": 90001,
+      "userId": 6,
+      "name": "Bayu Cahyo",
+      "status": "accepted",
+      "date": "2026-02-05",
+      "desc": "asd"
+    },
+    {
+      "id": 90002,
+      "userId": 7,
+      "name": "Dimas Ferdian",
+      "status": "pending",
+      "date": "2026-02-27",
+      "desc": "Kerusakan Gambar"
+    }
+  ]
+}

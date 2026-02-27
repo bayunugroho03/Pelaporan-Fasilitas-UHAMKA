@@ -248,26 +248,3 @@ export const submitQuestionnaire = async(req, res) => {
         res.status(500).json({msg: error.message});
     }
 }
-
-// ENDPOINT SEMENTARA - Fix Owner Laporan (Admin Only)
-export const fixReportOwner = async(req, res) => {
-    try {
-        if (!req.user || req.user.role !== 'admin') {
-            return res.status(403).json({ msg: 'Forbidden' });
-        }
-        const { id } = req.params;
-        const { userId } = req.body;
-        if (!userId) return res.status(400).json({ msg: 'userId wajib diisi' });
-        const before = await Reports.findOne({ where: { id } });
-        if (!before) return res.status(404).json({ msg: 'Laporan tidak ditemukan' });
-        await Reports.update({ userId: Number(userId) }, { where: { id } });
-        const after = await Reports.findOne({ where: { id } });
-        res.status(200).json({
-            msg: `Berhasil update userId laporan id=${id}`,
-            before: { id: before.id, userId: before.userId },
-            after: { id: after.id, userId: after.userId }
-        });
-    } catch (error) {
-        res.status(500).json({ msg: error.message });
-    }
-};

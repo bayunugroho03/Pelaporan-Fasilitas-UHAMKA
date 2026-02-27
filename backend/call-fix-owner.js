@@ -1,45 +1,36 @@
-// Script untuk memanggil endpoint fix-owner di production Vercel
-// Fix: laporan id=90002 harus diubah userId dari 6 (Bayu Cahyo) menjadi 7 (Dimas Ferdian)
-
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import axios from 'axios';
+import fs from 'fs';
 
 dotenv.config();
 
 const BASE_URL = 'https://pelaporan-fasilitas-uhamka.vercel.app';
 const SECRET = process.env.ACCESS_TOKEN_SECRET || 'rahasia_token_123';
 
-async function fixData() {
-  // Buat token admin
+async function fixAndVerify() {
   const token = jwt.sign({ userId: 5, name: 'Super Admin', email: 'admin@uhamka.ac.id', role: 'admin' }, SECRET, { expiresIn: '1d' });
 
-  try {
-    console.log('Memanggil endpoint fix-owner untuk laporan id=90002...');
-    
-    // Fix laporan id=90002 -> userId=7 (Dimas Ferdian)
-    const res = await axios.patch(
-      `${BASE_URL}/api/reports/90002/fix-owner`,
-      { userId: 7 },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    console.log('✅ BERHASIL:', JSON.stringify(res.data, null, 2));
+  const results = { fixes: [], reports: [] };
 
-    // Verifikasi: ambil laporan pending setelah fix
-    const reportsRes = await axios.get(`${BASE_URL}/api/reports`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    console.log('\n=== LAPORAN PENDING SETELAH FIX ===');
-    reportsRes.data
-      .filter(r => r.status === 'pending')
-      .forEach(r => {
-        console.log(`  id=${r.id} | userId=${r.userId} | user.name="${r.user ? r.user.name : 'NULL'}" | date=${r.report_date}`);
-      });
-
-  } catch(e) {
-    console.error('ERROR:', e.response ? JSON.stringify(e.response.data) : e.message);
+  const toFix = [30001, 90001];
+  for (const id of toFix) {
+    try {
+      const res = await axios.patch(`${BASE_URL}/api/reports/${id}/fix-owner`, { userId: 6 }, { headers: { Authorization: `Bearer ${token}` } });
+      results.fixes.push({ id, result: res.data });
+    } catch(e) {
+      results.fixes.push({ id, error: e.response ? e.response.data : e.message });
+    }
   }
+
+  // Verifikasi
+  const reportsRes = await axios.get(`${BASE_URL}/api/reports`, { headers: { Authorization: `Bearer ${token}` } });
+  results.reports = reportsRes.data.map(r => ({
+    id: r.id, userId: r.userId, name: r.user ? r.user.name : null, status: r.status, date: r.report_date, desc: r.description
+  }));
+
+  fs.writeFileSync('fix_result2.json', JSON.stringify(results, null, 2));
+  console.log(JSON.stringify(results, null, 2));
 }
 
-fixData();
+fixAndVerify();
