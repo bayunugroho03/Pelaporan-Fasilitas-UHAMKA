@@ -49,43 +49,59 @@ export const getReports = async(req, res) => {
         }
         if (!resolvedUserId) resolvedUserId = 1;
 
-        // JANGAN FETCH 'image' AGAR MEMORY VERCEL TIDAK CRASH (MENCEGAH ERROR 500 PAYLOAD TOO LARGE)
+        // JANGAN FETCH 'image' AGAR MEMORY VERCEL TIDAK CRASH
+        const opts = {
+            attributes: { exclude: ['image'] },
+            raw: true,
+            nest: true, // Akan mencoba menyusun object 'user' jika alias berhasil
+            include:[{
+                model: Users,
+                attributes:['name','email']
+            }]
+        };
+
         if(req.user.role === "admin"){
-            response = await Reports.findAll({
-                attributes: { exclude: ['image'] },
-                include:[{
-                    model: Users,
-                    attributes:['name','email']
-                }]
-            });
+            response = await Reports.findAll(opts);
         } else {
             response = await Reports.findAll({
-                attributes: { exclude: ['image'] },
-                where:{ userId: resolvedUserId },
-                include:[{
-                    model: Users,
-                    attributes:['name','email']
-                }]
+                ...opts,
+                where:{ userId: resolvedUserId }
             });
         }
 
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
         const formattedResponse = response.map(r => {
-            const rowData = r.toJSON();
+            // Karena raw: true, r sudah berupa object murni (bukan instance ORM)
+            const rowData = { ...r };
             
-            // Re-map the user property to 'user' lowercase to ensure frontend compatibility
-            // Sequelize can return it as 'User', 'users', or 'Users' depending on the model/alias configuration
-            const extractedUser = rowData.user || rowData.User || rowData.users || rowData.Users;
+            // Re-map the user property. Sequelize with raw & nest might produce 'user' or 'Users'.
+            // Atau TiDB mengembalikannya flat seperti 'user.name'
+            let extractedUser = rowData.user || rowData.User || rowData.users || rowData.Users || rowData.USER;
             
-            if (extractedUser) {
+            // Deteksi jika data rata / unnested akibat driver mysql TiDB bypass 'nest: true'
+            if (!extractedUser && (rowData['user.name'] || rowData['Users.name'])) {
+                extractedUser = {
+                    name: rowData['user.name'] || rowData['Users.name'] || rowData['User.name'] || rowData['users.name'],
+                    email: rowData['user.email'] || rowData['Users.email'] || rowData['User.email'] || rowData['users.email']
+                };
+            }
+
+            if (extractedUser && extractedUser.name) {
                 rowData.user = extractedUser;
             } else {
                 // Auto-repair missing relations for rendering (hanya jika benar-benar kosong)
                 rowData.user = { name: "Pengguna Tidak Dikenal", email: "unknown@uhamka.ac.id" };
             }
+
+            // Hapus sisa key flat jika ada untuk kebersihan
+            delete rowData['user.name'];
+            delete rowData['user.email'];
+            delete rowData['Users.name'];
+            delete rowData['Users.email'];
+
             return {
                 ...rowData,
-                image: `${apiUrl}/api/reports/${r.id}/image`
+                image: `${apiUrl}/api/reports/${r.id || r.ID}/image`
             };
         });
 
