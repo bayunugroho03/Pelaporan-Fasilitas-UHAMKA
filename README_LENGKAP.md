@@ -10,6 +10,8 @@ Aplikasi pelaporan fasilitas kampus berbasis web untuk Universitas Muhammadiyah 
 2. **XAMPP/Laragon** (Apache & MySQL berjalan)
 3. **Code Editor** (VS Code)
 
+Jika sudah di hosting, tidak perlu XAMPP/Laragon, ini sudah memakai Vercel dan TiDB (akun kampus)
+
 ---
 
 ## Struktur Folder Proyek

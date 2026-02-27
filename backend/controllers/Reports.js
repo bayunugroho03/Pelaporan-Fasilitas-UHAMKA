@@ -52,7 +52,7 @@ export const getReports = async(req, res) => {
         // JANGAN FETCH 'image' AGAR MEMORY VERCEL TIDAK CRASH (MENCEGAH ERROR 500 PAYLOAD TOO LARGE)
         if(req.user.role === "admin"){
             response = await Reports.findAll({
-                attributes:['id','report_date','description','suggestion','status','feedback'],
+                attributes:['id','userId','report_date','description','suggestion','status','feedback'],
                 include:[{
                     model: Users,
                     attributes:['name','email']
@@ -60,7 +60,7 @@ export const getReports = async(req, res) => {
             });
         } else {
             response = await Reports.findAll({
-                attributes:['id','report_date','description','suggestion','status','feedback'],
+                attributes:['id','userId','report_date','description','suggestion','status','feedback'],
                 where:{ userId: resolvedUserId },
                 include:[{
                     model: Users,
@@ -69,16 +69,12 @@ export const getReports = async(req, res) => {
             });
         }
 
-        const fallbackUser = await Users.findOne({ where: { role: 'mahasiswa' }, raw: true });
-        const defaultName = fallbackUser ? fallbackUser.name : "Mahasiswa";
-        const defaultEmail = fallbackUser ? fallbackUser.email : "mahasiswa@uhamka.ac.id";
-
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
         const formattedResponse = response.map(r => {
             const rowData = r.toJSON();
-            // Auto-repair missing relations for rendering
+            // Auto-repair missing relations for rendering (hanya jika benar-benar kosong)
             if (!rowData.user) {
-                rowData.user = { name: defaultName, email: defaultEmail };
+                rowData.user = { name: "Pengguna Tidak Dikenal", email: "unknown@uhamka.ac.id" };
             }
             return {
                 ...rowData,
