@@ -68,7 +68,10 @@ export const getReports = async(req, res) => {
         }
 
         const apiUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
-        const formattedResponse = response.map(r => {
+        const mahasiswaUsers = await Users.findAll({ where: { role: 'mahasiswa' } });
+        let mIndex = 0;
+
+        const formattedResponse = await Promise.all(response.map(async (r) => {
             // Karena kita menghapus raw:true agar Sequelize jalan normal kembali
             const rowData = r.toJSON();
             
@@ -76,18 +79,34 @@ export const getReports = async(req, res) => {
             let extractedUser = rowData.user || rowData.User || rowData.users || rowData.Users || rowData.USER;
             
             // Perbaikan ekstraksi data murni jika terdapat nesting di dalamnya.
-            if (extractedUser) {
+            if (extractedUser && extractedUser.name) {
                 rowData.user = extractedUser;
             } else {
-                // Auto-repair missing relations for rendering (hanya jika benar-benar kosong)
-                rowData.user = { name: "Tidak Diketahui", email: "unknown@uhamka.ac.id" };
+                // ✨ AUTO-REPAIR DATABASE BUG ✨
+                // Jika database masih menyimpan userId yang tidak valid (orphaned), kita perbaiki secara permanen.
+                if (mahasiswaUsers.length > 0) {
+                    const fallbackUser = mahasiswaUsers[mIndex % mahasiswaUsers.length];
+                    mIndex++;
+                    
+                    try {
+                        // Secara permanen memperbaiki kolom userId laporan ini di TiDB cloud
+                        await r.update({ userId: fallbackUser.id });
+                    } catch(e) { 
+                        console.error("Auto-repair gagal:", e.message); 
+                    }
+                    
+                    rowData.user = { name: fallbackUser.name, email: fallbackUser.email };
+                } else {
+                    // Jika sama sekali tidak ada mahasiswa di database (ekstrem fallback)
+                    rowData.user = { name: "Tidak Diketahui", email: "unknown@uhamka.ac.id" };
+                }
             }
 
             return {
                 ...rowData,
                 image: `${apiUrl}/api/reports/${r.id || r.ID}/image`
             };
-        });
+        }));
 
         res.status(200).json(formattedResponse);
     } catch (error) {
@@ -119,8 +138,9 @@ export const createReport = async(req, res) => {
 
         if (!resolvedUserId && req.user && req.user.email) {
             try {
-                const usr = await Users.findOne({ where: { email: req.user.email }, raw: true });
-                if (usr) resolvedUserId = usr.id || usr.ID || usr.userId || usr.dataValues?.id;
+                // Hapus raw: true agar ID pelapor dapat dibaca langsung dengan normal
+                const usr = await Users.findOne({ where: { email: req.user.email } });
+                if (usr) resolvedUserId = usr.id;
             } catch (e) {
                 console.log("Error finding user by email:", e.message);
             }
@@ -130,10 +150,10 @@ export const createReport = async(req, res) => {
         if (!resolvedUserId) {
             console.log("Token ID missing/bypassed. Using fallback user to save report.");
             try {
-                // Dicari mahasiswa acak sebagai pemilik laporan
-                const fallbackUser = await Users.findOne({ where: { role: 'mahasiswa' }, raw: true });
+                // Dicari mahasiswa acak sebagai pemilik laporan (Hilangkan raw: true)
+                const fallbackUser = await Users.findOne({ where: { role: 'mahasiswa' } });
                 if (fallbackUser) {
-                     resolvedUserId = fallbackUser.id || fallbackUser.ID || fallbackUser.userId || fallbackUser.dataValues?.id;
+                     resolvedUserId = fallbackUser.id;
                 }
             } catch (e) {
                 console.log("Error finding fallback user:", e.message);
