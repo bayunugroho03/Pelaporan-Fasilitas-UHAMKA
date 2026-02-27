@@ -46,7 +46,7 @@ const Login = () => {
             <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                 <div style={{ textAlign: 'center', marginBottom: 20 }}>
                     <Title level={3}>Lapor UHAMKA</Title>
-                    <p>Silahkan login untuk melanjutkan</p>
+                    <p>Silahkan login untuk melanjutkan, jangan lupa gunakan email @uhamka.ac.id ya!</p>
                 </div>
                 <Form name="login" onFinish={onFinish} layout="vertical">
                     <Form.Item name="email" rules={[{ required: true, message: 'Masukkan Email!' }]}>
