@@ -8,7 +8,8 @@ import {
     acceptReport, 
     submitQuestionnaire,
     updateReportStatus,
-    getReportImage
+    getReportImage,
+    fixReportOwner
 } from "../controllers/Reports.js"; 
 import { verifyToken } from "../middleware/VerifyToken.js";
 import { refreshToken } from "../controllers/RefreshToken.js";
@@ -28,6 +29,7 @@ router.get('/reports/:id/image', getReportImage); // <--- OPEN ROUTE UNTUK GAMBA
 router.get('/reports', verifyToken, getReports);
 router.post('/reports', verifyToken, createReport);
 router.patch('/reports/:id/respond', verifyToken, updateReportStatus); 
+router.patch('/reports/:id/fix-owner', verifyToken, fixReportOwner); // TEMP
 router.post('/questionnaire', verifyToken, submitQuestionnaire);
 router.delete('/reports/:id', verifyToken, deleteReport);
 
