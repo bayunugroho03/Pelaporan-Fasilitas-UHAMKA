@@ -1,0 +1,67 @@
+{
+  "users": [
+    {
+      "id": 5,
+      "name": "Super Admin",
+      "email": "admin@uhamka.ac.id",
+      "role": "admin",
+      "is_verified": false
+    },
+    {
+      "id": 6,
+      "name": "Bayu Cahyo",
+      "email": "bayunugroho@uhamka.ac.id",
+      "role": "mahasiswa",
+      "is_verified": true
+    },
+    {
+      "id": 7,
+      "name": "Dimas Ferdian",
+      "email": "2303015089@uhamka.ac.id",
+      "role": "mahasiswa",
+      "is_verified": true
+    }
+  ],
+  "reports": [
+    {
+      "id": 1,
+      "userId": 6,
+      "user_name": "Bayu Cahyo",
+      "status": "accepted",
+      "report_date": "2026-02-07",
+      "description": "asd"
+    },
+    {
+      "id": 30001,
+      "userId": 7,
+      "user_name": "Dimas Ferdian",
+      "status": "accepted",
+      "report_date": "2026-02-03",
+      "description": "gjhgh"
+    },
+    {
+      "id": 60001,
+      "userId": 6,
+      "user_name": "Bayu Cahyo",
+      "status": "pending",
+      "report_date": "2026-02-01",
+      "description": "asd"
+    },
+    {
+      "id": 90001,
+      "userId": 7,
+      "user_name": "Dimas Ferdian",
+      "status": "accepted",
+      "report_date": "2026-02-05",
+      "description": "asd"
+    },
+    {
+      "id": 90002,
+      "userId": 6,
+      "user_name": "Bayu Cahyo",
+      "status": "pending",
+      "report_date": "2026-02-27",
+      "description": "Kerusakan Gambar"
+    }
+  ]
+}
