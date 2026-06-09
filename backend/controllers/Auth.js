@@ -70,25 +70,43 @@ export const Login = async(req, res) => {
 
 // --- REGISTER ---
 export const Register = async(req, res) => {
-    const { name, email, password, confPassword } = req.body;
-    
-    // 1. VALIDASI: Wajib @uhamka.ac.id
-    if(!email.endsWith("@uhamka.ac.id")){
-        return res.status(400).json({msg: "Registrasi Gagal! Wajib menggunakan email @uhamka.ac.id"});
-    }
-
-    if(password !== confPassword) return res.status(400).json({msg: "Password dan Confirm Password tidak cocok"});
-    
-    // Cek duplikat email
-    const userExist = await Users.findOne({ where: { email: email } });
-    if(userExist) return res.status(400).json({msg: "Email sudah terdaftar!"});
-
-    const salt = await bcrypt.genSalt();
-    const hashPassword = await bcrypt.hash(password, salt);
-
     try {
-        // 2. Simpan User (Status Awal: Belum Aktif)
-        await Users.create({
+        const { name, email, password, confPassword } = req.body;
+        
+        // 1. VALIDASI: Wajib @uhamka.ac.id
+        if(!email || !email.endsWith("@uhamka.ac.id")){
+            return res.status(400).json({msg: "Registrasi Gagal! Wajib menggunakan email @uhamka.ac.id"});
+        }
+
+        if(password !== confPassword) return res.status(400).json({msg: "Password dan Confirm Password tidak cocok"});
+        
+        // Cek duplikat email
+        const userExist = await Users.findOne({ where: { email: email } });
+        if(userExist) return res.status(400).json({msg: "Email sudah terdaftar!"});
+
+        const salt = await bcrypt.genSalt();
+        const hashPassword = await bcrypt.hash(password, salt);
+
+        // --- CEK APAKAH EMAIL DIKONFIGURASI ---
+        // Jika EMAIL_USER / EMAIL_PASS tidak ada di environment, langsung aktifkan akun
+        const emailConfigured = process.env.EMAIL_USER && process.env.EMAIL_PASS;
+
+        if (!emailConfigured) {
+            // Mode tanpa email: simpan user dan langsung aktifkan (auto-verify)
+            console.log("⚠️  EMAIL tidak dikonfigurasi. User diaktifkan otomatis tanpa verifikasi email.");
+            await Users.create({
+                name: name,
+                email: email,
+                password: hashPassword,
+                role: "mahasiswa",
+                is_verified: true  // Langsung aktif
+            });
+            return res.json({msg: "Registrasi Berhasil! Silahkan login sekarang."});
+        }
+
+        // --- MODE NORMAL: Simpan user sementara & kirim email ---
+        // Simpan User (Status Awal: Belum Aktif)
+        const newUser = await Users.create({
             name: name,
             email: email,
             password: hashPassword,
@@ -96,34 +114,45 @@ export const Register = async(req, res) => {
             is_verified: false 
         });
 
-        // 3. Buat Token Verifikasi (Berlaku 1 Hari)
+        // Buat Token Verifikasi (Berlaku 1 Hari)
         const verificationToken = jwt.sign({email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1d'});
 
-        // 4. Kirim Email Verifikasi
-        // Hasilkan domain tujuan secara dinamik langsung dari Request Host
-        // Mengabaikan process.env.API_URL karena terbukti malah berisi localhost:5000 di konfigurasi Vercel
+        // Hasilkan URL verifikasi secara dinamik dari Request Host
         const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
         const apiUrl = host ? `${protocol}://${host}/api` : 'http://localhost:5000/api';
         const url = `${apiUrl}/verify-email?token=${verificationToken}`;
-        
-        await transporter.sendMail({
-            from: `"Lapor Fasilitas UHAMKA" <${process.env.EMAIL_USER}>`,
-            to: email, 
-            subject: 'Verifikasi Akun Mahasiswa',
-            html: `
-                <h3>Halo, ${name}</h3>
-                <p>Silahkan klik link di bawah ini untuk mengaktifkan akun Anda:</p>
-                <a href="${url}" style="background-color: blue; color: white; padding: 10px; text-decoration: none; border-radius: 5px;">Verifikasi Akun Saya</a>
-                <p>Link berlaku 24 jam.</p>
-            `
-        });
 
-        res.json({msg: "Registrasi Berhasil! Cek email Anda sekarang untuk verifikasi."});
+        try {
+            // Kirim Email Verifikasi
+            await transporter.sendMail({
+                from: `"Lapor Fasilitas UHAMKA" <${process.env.EMAIL_USER}>`,
+                to: email, 
+                subject: 'Verifikasi Akun Mahasiswa',
+                html: `
+                    <h3>Halo, ${name}!</h3>
+                    <p>Terima kasih telah mendaftar di <strong>Lapor Fasilitas UHAMKA</strong>.</p>
+                    <p>Silahkan klik link di bawah ini untuk mengaktifkan akun Anda:</p>
+                    <a href="${url}" style="background-color: #1890ff; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;">Verifikasi Akun Saya</a>
+                    <p style="color: gray; font-size: 12px;">Link berlaku 24 jam. Jika Anda tidak merasa mendaftar, abaikan email ini.</p>
+                `
+            });
+
+            res.json({msg: "Registrasi Berhasil! Cek email Anda sekarang untuk verifikasi."});
+
+        } catch (emailError) {
+            // ⚠️ ROLLBACK: Jika email gagal terkirim, hapus user agar tidak stuck
+            console.error("❌ Gagal kirim email verifikasi:", emailError.message);
+            await Users.destroy({ where: { id: newUser.id } });
+            
+            return res.status(500).json({
+                msg: `Registrasi gagal karena email verifikasi tidak dapat dikirim ke ${email}. Pastikan email Anda benar dan coba lagi. (Error: ${emailError.message})`
+            });
+        }
 
     } catch (error) {
-        console.log(error);
-        res.status(500).json({msg: "Gagal mengirim email verifikasi."});
+        console.error("❌ Error di Register:", error.message);
+        res.status(500).json({msg: "Terjadi kesalahan pada server. Silahkan coba lagi."});
     }
 }
 
